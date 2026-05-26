@@ -1,7 +1,6 @@
 #include "gui/MainWindow.h"
 
 #include "gui/GraphScene.h"
-#include "gui/ParameterPanel.h"
 #include "i18n/LanguageManager.h"
 #include "io/WorkflowSerializer.h"
 #include "nodes/ImageNodes.h"
@@ -62,9 +61,6 @@ void MainWindow::setupUi()
     view->setRenderHint(QPainter::Antialiasing);
     view->setDragMode(QGraphicsView::RubberBandDrag);
 
-    m_parameterPanel = new ParameterPanel(this);
-    connect(m_parameterPanel, &ParameterPanel::parametersChanged, this, &MainWindow::markDirty);
-
     m_preview = new QLabel(tr("Preview"), this);
     m_preview->setMinimumHeight(180);
     m_preview->setAlignment(Qt::AlignCenter);
@@ -95,10 +91,8 @@ void MainWindow::setupUi()
     auto *root = new QSplitter(Qt::Horizontal, this);
     root->addWidget(leftPanel);
     root->addWidget(center);
-    root->addWidget(m_parameterPanel);
     root->setStretchFactor(0, 0);
     root->setStretchFactor(1, 4);
-    root->setStretchFactor(2, 1);
     setCentralWidget(root);
     retranslateUi();
 }
@@ -116,7 +110,6 @@ void MainWindow::addSelectedNode()
 void MainWindow::onNodeSelected(const QString &nodeId)
 {
     m_selectedNodeId = nodeId;
-    m_parameterPanel->setNode(m_graph.node(nodeId));
     updatePreview(nodeId);
 }
 
@@ -140,7 +133,6 @@ void MainWindow::newWorkflow()
     m_graph.clear();
     m_executor.clear();
     m_scene->rebuild();
-    m_parameterPanel->setNode(nullptr);
     m_preview->setText(tr("Preview"));
     markDirty();
 }
@@ -225,7 +217,6 @@ void MainWindow::retranslateUi()
 
     populateNodeList();
     refreshDefaultNodeTitles();
-    m_parameterPanel->setNode(m_graph.node(m_selectedNodeId));
     m_scene->rebuild();
 }
 

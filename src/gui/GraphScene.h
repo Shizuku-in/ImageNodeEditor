@@ -8,6 +8,10 @@
 #include <QGraphicsScene>
 #include <QHash>
 
+class QPainter;
+class ParameterPopup;
+class QGraphicsProxyWidget;
+class QStyleOptionGraphicsItem;
 class NodeItem;
 
 class PortItem : public QGraphicsEllipseItem
@@ -49,9 +53,12 @@ public:
     void refreshEdges();
     PortItem *portItem(const QString &nodeId, const QString &portName, PortDirection direction) const;
     NodeItem *nodeItem(const QString &nodeId) const;
+    void showParameterPopup(const QString &nodeId);
+    void closeParameterPopup();
 
 signals:
     void nodeSelected(const QString &nodeId);
+    void editNodeRequested(const QString &nodeId);
     void graphChanged();
     void warningRaised(const QString &message);
 
@@ -72,6 +79,8 @@ private:
     const NodeFactory *m_factory = nullptr;
     QHash<QString, NodeItem *> m_nodeItems;
     QList<EdgeItem *> m_edgeItems;
+    QGraphicsProxyWidget *m_parameterProxy = nullptr;
+    ParameterPopup *m_parameterPopup = nullptr;
     PortItem *m_connectStart = nullptr;
     QGraphicsLineItem *m_tempLine = nullptr;
 };
@@ -85,11 +94,14 @@ public:
     PortItem *portItem(const QString &portName, PortDirection direction) const;
 
 protected:
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 private:
+    QRectF editButtonRect() const;
+
     Node *m_node = nullptr;
     GraphScene *m_graphScene = nullptr;
     QHash<QString, PortItem *> m_ports;
 };
-

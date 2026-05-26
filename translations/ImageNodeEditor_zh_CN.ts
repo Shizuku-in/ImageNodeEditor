@@ -47,7 +47,7 @@
 <context>
     <name>GraphScene</name>
     <message>
-        <location filename="../src/gui/GraphScene.cpp" line="137"/>
+        <location filename="../src/gui/GraphScene.cpp" line="184"/>
         <source>Unknown node type: %1</source>
         <translation>未知节点类型：%1</translation>
     </message>
@@ -55,43 +55,43 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="215"/>
+        <location filename="../src/gui/MainWindow.cpp" line="207"/>
         <source>Workflow</source>
         <translation>工作流</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="216"/>
+        <location filename="../src/gui/MainWindow.cpp" line="208"/>
         <source>New</source>
         <translation>新建</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="217"/>
+        <location filename="../src/gui/MainWindow.cpp" line="209"/>
         <source>Open</source>
         <translation>打开</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="218"/>
+        <location filename="../src/gui/MainWindow.cpp" line="210"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="219"/>
+        <location filename="../src/gui/MainWindow.cpp" line="211"/>
         <source>Run</source>
         <translation>运行</translation>
     </message>
     <message>
+        <location filename="../src/gui/MainWindow.cpp" line="204"/>
         <location filename="../src/gui/MainWindow.cpp" line="212"/>
-        <location filename="../src/gui/MainWindow.cpp" line="220"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="213"/>
+        <location filename="../src/gui/MainWindow.cpp" line="205"/>
         <source>English</source>
         <translation>英文</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="214"/>
+        <location filename="../src/gui/MainWindow.cpp" line="206"/>
         <source>Simplified Chinese</source>
         <translation>简体中文</translation>
     </message>
@@ -100,55 +100,55 @@
         <translation type="vanished">语言将在重启程序后生效。</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="221"/>
+        <location filename="../src/gui/MainWindow.cpp" line="213"/>
         <source>Node Library</source>
         <translation>节点库</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="68"/>
-        <location filename="../src/gui/MainWindow.cpp" line="144"/>
-        <location filename="../src/gui/MainWindow.cpp" line="223"/>
+        <location filename="../src/gui/MainWindow.cpp" line="64"/>
+        <location filename="../src/gui/MainWindow.cpp" line="136"/>
+        <location filename="../src/gui/MainWindow.cpp" line="215"/>
         <source>Preview</source>
         <translation>预览</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="134"/>
+        <location filename="../src/gui/MainWindow.cpp" line="127"/>
         <source>Workflow executed successfully.</source>
         <translation>工作流执行成功。</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="150"/>
+        <location filename="../src/gui/MainWindow.cpp" line="142"/>
         <source>Open Workflow</source>
         <translation>打开工作流</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="167"/>
+        <location filename="../src/gui/MainWindow.cpp" line="159"/>
         <source>Save Workflow</source>
         <translation>保存工作流</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="150"/>
-        <location filename="../src/gui/MainWindow.cpp" line="167"/>
+        <location filename="../src/gui/MainWindow.cpp" line="142"/>
+        <location filename="../src/gui/MainWindow.cpp" line="159"/>
         <source>Workflow (*.json)</source>
         <translation>工作流 (*.json)</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="161"/>
+        <location filename="../src/gui/MainWindow.cpp" line="153"/>
         <source>Loaded %1</source>
         <translation>已加载 %1</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="176"/>
+        <location filename="../src/gui/MainWindow.cpp" line="168"/>
         <source>Saved %1</source>
         <translation>已保存 %1</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="182"/>
+        <location filename="../src/gui/MainWindow.cpp" line="174"/>
         <source>Error: %1</source>
         <translation>错误：%1</translation>
     </message>
     <message>
-        <location filename="../src/gui/MainWindow.cpp" line="271"/>
+        <location filename="../src/gui/MainWindow.cpp" line="262"/>
         <source>Selected node has no image output.</source>
         <translation>选中的节点没有图像输出。</translation>
     </message>
@@ -432,6 +432,24 @@
     </message>
 </context>
 <context>
+    <name>ParameterEditorWidget</name>
+    <message>
+        <location filename="../src/gui/ParameterEditorWidget.cpp" line="45"/>
+        <source>No node selected.</source>
+        <translation>未选择节点。</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ParameterEditorWidget.cpp" line="50"/>
+        <source>No editable parameters.</source>
+        <translation>没有可编辑参数。</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ParameterEditorWidget.cpp" line="112"/>
+        <source>Unsupported</source>
+        <translation>不支持</translation>
+    </message>
+</context>
+<context>
     <name>ParameterPanel</name>
     <message>
         <location filename="../src/gui/ParameterPanel.cpp" line="26"/>
@@ -448,6 +466,20 @@
         <location filename="../src/gui/ParameterPanel.cpp" line="114"/>
         <source>Unsupported</source>
         <translation>不支持</translation>
+    </message>
+</context>
+<context>
+    <name>ParameterPopup</name>
+    <message>
+        <location filename="../src/gui/ParameterEditorWidget.cpp" line="183"/>
+        <source>Edit Parameters</source>
+        <translation>编辑参数</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/ParameterEditorWidget.cpp" line="189"/>
+        <location filename="../src/gui/ParameterEditorWidget.cpp" line="190"/>
+        <source>Close</source>
+        <translation>关闭</translation>
     </message>
 </context>
 <context>

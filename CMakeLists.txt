@@ -28,6 +28,7 @@ set(COMMON_SOURCES
 )
 
 set(GUI_SOURCES
+    src/gui/ParameterEditorWidget.cpp
     src/gui/GraphScene.cpp
     src/gui/MainWindow.cpp
     src/gui/ParameterPanel.cpp

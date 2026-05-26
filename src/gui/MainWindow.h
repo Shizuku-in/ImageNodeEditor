@@ -11,7 +11,6 @@ class QMenu;
 class QToolBar;
 class QToolButton;
 class GraphScene;
-class ParameterPanel;
 class QLabel;
 class QListWidget;
 class QPlainTextEdit;
@@ -64,7 +63,6 @@ private:
     QLabel *m_nodeLibraryLabel = nullptr;
     QListWidget *m_nodeList = nullptr;
     GraphScene *m_scene = nullptr;
-    ParameterPanel *m_parameterPanel = nullptr;
     QLabel *m_preview = nullptr;
     QPlainTextEdit *m_log = nullptr;
 };

@@ -1,9 +1,14 @@
 #include "gui/GraphScene.h"
 
+#include "gui/ParameterEditorWidget.h"
+
 #include <QBrush>
+#include <QGraphicsProxyWidget>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
+#include <QPainter>
 #include <QPen>
+#include <cmath>
 
 namespace {
 
@@ -76,6 +81,7 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
     auto *title = new QGraphicsTextItem(node->title(), this);
     title->setDefaultTextColor(Qt::white);
     title->setPos(10, 4);
+    title->setTextWidth(width - 44);
 
     int row = 0;
     for (const PortSpec &port : node->inputPorts()) {
@@ -110,6 +116,41 @@ PortItem *NodeItem::portItem(const QString &portName, PortDirection direction) c
     return m_ports.value(portKey(portName, direction), nullptr);
 }
 
+void NodeItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QGraphicsRectItem::paint(painter, option, widget);
+
+    const QRectF button = editButtonRect();
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(QPen(QColor("#94a3b8"), 1));
+    painter->setBrush(isSelected() ? QColor("#334155") : QColor("#273449"));
+    painter->drawRoundedRect(button, 4, 4);
+
+    const QPointF center = button.center();
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(QPen(QColor("#e5e7eb"), 1.3));
+    painter->drawEllipse(center, 4.0, 4.0);
+    for (int i = 0; i < 8; ++i) {
+        const double angle = i * 3.14159265358979323846 / 4.0;
+        const QPointF inner(center.x() + std::cos(angle) * 5.5, center.y() + std::sin(angle) * 5.5);
+        const QPointF outer(center.x() + std::cos(angle) * 7.5, center.y() + std::sin(angle) * 7.5);
+        painter->drawLine(inner, outer);
+    }
+}
+
+void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && editButtonRect().contains(event->pos())) {
+        if (m_graphScene) {
+            setSelected(true);
+            m_graphScene->showParameterPopup(nodeId());
+        }
+        event->accept();
+        return;
+    }
+    QGraphicsRectItem::mousePressEvent(event);
+}
+
 QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == QGraphicsItem::ItemPositionHasChanged && m_node) {
@@ -119,6 +160,12 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant &value)
         }
     }
     return QGraphicsRectItem::itemChange(change, value);
+}
+
+QRectF NodeItem::editButtonRect() const
+{
+    const QRectF r = rect();
+    return QRectF(r.right() - 32, r.top() + 8, 22, 22);
 }
 
 GraphScene::GraphScene(WorkflowGraph *graph, const NodeFactory *factory, QObject *parent)
@@ -149,6 +196,7 @@ void GraphScene::addNode(const QString &typeName, const QPointF &position)
 
 void GraphScene::rebuild()
 {
+    closeParameterPopup();
     clear();
     m_nodeItems.clear();
     m_edgeItems.clear();
@@ -183,6 +231,53 @@ PortItem *GraphScene::portItem(const QString &nodeId, const QString &portName, P
 NodeItem *GraphScene::nodeItem(const QString &nodeId) const
 {
     return m_nodeItems.value(nodeId, nullptr);
+}
+
+void GraphScene::showParameterPopup(const QString &nodeId)
+{
+    Node *node = m_graph->node(nodeId);
+    NodeItem *item = nodeItem(nodeId);
+    if (!node || !item) {
+        closeParameterPopup();
+        return;
+    }
+
+    closeParameterPopup();
+    emit editNodeRequested(nodeId);
+
+    m_parameterPopup = new ParameterPopup();
+    m_parameterPopup->setNode(node);
+    connect(m_parameterPopup, &ParameterPopup::closeRequested, this, &GraphScene::closeParameterPopup);
+    connect(m_parameterPopup, &ParameterPopup::parametersChanged, this, [this]() {
+        emit graphChanged();
+    });
+
+    m_parameterProxy = addWidget(m_parameterPopup);
+    m_parameterProxy->setZValue(20);
+    m_parameterPopup->adjustSize();
+
+    const QRectF nodeRect = item->sceneBoundingRect();
+    const QSizeF popupSize = m_parameterProxy->boundingRect().size();
+    QPointF popupPos = nodeRect.topRight() + QPointF(16, 0);
+    if (popupPos.x() + popupSize.width() > sceneRect().right()) {
+        popupPos = nodeRect.bottomLeft() + QPointF(0, 16);
+    }
+    if (popupPos.y() + popupSize.height() > sceneRect().bottom()) {
+        popupPos.setY(nodeRect.top() - popupSize.height() - 16);
+    }
+    m_parameterProxy->setPos(popupPos);
+}
+
+void GraphScene::closeParameterPopup()
+{
+    if (!m_parameterProxy) {
+        m_parameterPopup = nullptr;
+        return;
+    }
+    removeItem(m_parameterProxy);
+    delete m_parameterProxy;
+    m_parameterProxy = nullptr;
+    m_parameterPopup = nullptr;
 }
 
 void GraphScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -238,6 +333,7 @@ void GraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 void GraphScene::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        closeParameterPopup();
         const QList<QGraphicsItem *> selected = selectedItems();
         for (QGraphicsItem *item : selected) {
             if (auto *nodeItem = dynamic_cast<NodeItem *>(item)) {
