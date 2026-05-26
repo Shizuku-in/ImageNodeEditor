@@ -92,6 +92,7 @@ public:
 
     QString nodeId() const;
     PortItem *portItem(const QString &portName, PortDirection direction) const;
+    void refreshParameterLabels();
 
 protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -100,8 +101,11 @@ protected:
 
 private:
     QRectF editButtonRect() const;
+    static QString formatParamValue(const ParameterSpec &spec, const QVariant &value);
 
     Node *m_node = nullptr;
     GraphScene *m_graphScene = nullptr;
     QHash<QString, PortItem *> m_ports;
+    QList<QGraphicsTextItem *> m_paramLabels;
+    qreal m_paramStartY = 0;
 };

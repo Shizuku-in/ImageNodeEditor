@@ -71,8 +71,12 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
     const int inputCount = node->inputPorts().size();
     const int outputCount = node->outputPorts().size();
     const int rows = std::max(inputCount, outputCount);
+    const QVector<ParameterSpec> specs = node->parameterSpecs();
+    const int paramCount = specs.size();
     const qreal width = 190;
-    const qreal height = 52 + rows * 24;
+    const qreal portAreaEnd = 52 + rows * 24;
+    const qreal paramAreaHeight = paramCount > 0 ? 6 + paramCount * 18 : 0;
+    const qreal height = portAreaEnd + paramAreaHeight;
     setRect(0, 0, width, height);
     setBrush(QColor("#1f2937"));
     setPen(QPen(QColor("#64748b"), 1.2));
@@ -104,6 +108,24 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
         label->setDefaultTextColor(QColor("#fee2e2"));
         label->setPos(width - 82, 31 + row * 24);
         ++row;
+    }
+
+    // Parameter summary area
+    m_paramStartY = portAreaEnd;
+    if (paramCount > 0) {
+        QFont paramFont;
+        paramFont.setPointSizeF(8.0);
+
+        for (int i = 0; i < paramCount; ++i) {
+            const ParameterSpec &spec = specs[i];
+            const QString text = spec.displayName + ": " + formatParamValue(spec, node->parameter(spec.name));
+            auto *label = new QGraphicsTextItem(text, this);
+            label->setDefaultTextColor(QColor("#94a3b8"));
+            label->setFont(paramFont);
+            label->setPos(10, m_paramStartY + i * 18 - 2);
+            label->setTextWidth(width - 20);
+            m_paramLabels.append(label);
+        }
     }
 }
 
@@ -157,6 +179,12 @@ void NodeItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
                           button.center().y() - iconSize / 2,
                           iconSize, iconSize);
     renderer.render(painter, iconRect);
+
+    // Draw separator line above parameter area
+    if (!m_paramLabels.isEmpty()) {
+        painter->setPen(QPen(QColor("#3f3f46"), 0.8));
+        painter->drawLine(QPointF(8, m_paramStartY), QPointF(rect().width() - 8, m_paramStartY));
+    }
 }
 
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -187,6 +215,39 @@ QRectF NodeItem::editButtonRect() const
 {
     const QRectF r = rect();
     return QRectF(r.right() - 32, r.top() + 8, 22, 22);
+}
+
+void NodeItem::refreshParameterLabels()
+{
+    if (!m_node) return;
+    const QVector<ParameterSpec> specs = m_node->parameterSpecs();
+    for (int i = 0; i < m_paramLabels.size() && i < specs.size(); ++i) {
+        const ParameterSpec &spec = specs[i];
+        const QString text = spec.displayName + ": " + formatParamValue(spec, m_node->parameter(spec.name));
+        m_paramLabels[i]->setPlainText(text);
+    }
+}
+
+QString NodeItem::formatParamValue(const ParameterSpec &spec, const QVariant &value)
+{
+    switch (spec.kind) {
+    case ParameterKind::Bool:
+        return value.toBool() ? QString::fromUtf8("\xe2\x9c\x93") : QString::fromUtf8("\xe2\x9c\x97");
+    case ParameterKind::Double:
+        return QString::number(value.toDouble(), 'f', 2);
+    case ParameterKind::String: {
+        QString s = value.toString();
+        if (s.length() > 18) {
+            s = s.left(16) + QString::fromUtf8("\xe2\x80\xa6");
+        }
+        return s;
+    }
+    case ParameterKind::Int:
+    case ParameterKind::Color:
+    case ParameterKind::Choice:
+        return value.toString();
+    }
+    return value.toString();
 }
 
 GraphScene::GraphScene(WorkflowGraph *graph, const NodeFactory *factory, QObject *parent)
@@ -269,7 +330,8 @@ void GraphScene::showParameterPopup(const QString &nodeId)
     m_parameterPopup = new ParameterPopup();
     m_parameterPopup->setNode(node);
     connect(m_parameterPopup, &ParameterPopup::closeRequested, this, &GraphScene::closeParameterPopup);
-    connect(m_parameterPopup, &ParameterPopup::parametersChanged, this, [this]() {
+    connect(m_parameterPopup, &ParameterPopup::parametersChanged, this, [this, item]() {
+        item->refreshParameterLabels();
         emit graphChanged();
     });
 
