@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "ImageInput",
+      "title": "Input",
+      "pos": [80, 120],
+      "params": {
+        "path": "samples/input.png"
+      }
+    },
+    {
+      "id": "n2",
+      "type": "BrightnessContrast",
+      "title": "Bright Color",
+      "pos": [330, 90],
+      "params": {
+        "brightness": 18,
+        "contrast": 1.18
+      }
+    },
+    {
+      "id": "n3",
+      "type": "TextOverlay",
+      "title": "Caption",
+      "pos": [580, 90],
+      "params": {
+        "text": "ImageNodeEditor",
+        "fontSize": 38,
+        "color": "#ffffff",
+        "x": 28,
+        "y": 58
+      }
+    },
+    {
+      "id": "n4",
+      "type": "ImageExport",
+      "title": "Export",
+      "pos": [830, 90],
+      "params": {
+        "path": "output/result.png",
+        "format": "png",
+        "quality": 95
+      }
+    }
+  ],
+  "edges": [
+    {
+      "fromNode": "n1",
+      "fromPort": "image",
+      "toNode": "n2",
+      "toPort": "image"
+    },
+    {
+      "fromNode": "n2",
+      "fromPort": "image",
+      "toNode": "n3",
+      "toPort": "image"
+    },
+    {
+      "fromNode": "n3",
+      "fromPort": "image",
+      "toNode": "n4",
+      "toPort": "image"
+    }
+  ]
+}
+

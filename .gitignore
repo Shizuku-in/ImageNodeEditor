@@ -1,0 +1,42 @@
+# Build outputs
+build/
+build-*/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+
+# Binaries and generated objects
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.o
+*.obj
+*.pdb
+
+# Qt generated files
+*_autogen/
+*.qm
+.qmake.stash
+
+# IDE local files
+.qtcreator/
+*.user
+*.user.*
+.vscode/
+.idea/
+
+# Runtime output
+output/
+
+# OS/editor noise
+Thumbs.db
+.DS_Store
+*.swp
+*.tmp

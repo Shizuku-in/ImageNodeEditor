@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "ImageInput",
+      "title": "Input",
+      "pos": [60, 160],
+      "params": {
+        "path": "samples/input.png"
+      }
+    },
+    {
+      "id": "n2",
+      "type": "Blur",
+      "title": "Soft Branch",
+      "pos": [300, 80],
+      "params": {
+        "radius": 3
+      }
+    },
+    {
+      "id": "n3",
+      "type": "Sharpen",
+      "title": "Sharp Branch",
+      "pos": [300, 260],
+      "params": {
+        "amount": 0.8
+      }
+    },
+    {
+      "id": "n4",
+      "type": "ThresholdMask",
+      "title": "Mask",
+      "pos": [300, 440],
+      "params": {
+        "threshold": 120,
+        "invert": false
+      }
+    },
+    {
+      "id": "n5",
+      "type": "Blend",
+      "title": "Masked Blend",
+      "pos": [590, 190],
+      "params": {
+        "opacity": 0.65,
+        "mode": "Screen"
+      }
+    },
+    {
+      "id": "n6",
+      "type": "ImageExport",
+      "title": "Export",
+      "pos": [860, 220],
+      "params": {
+        "path": "output/branch_blend.png",
+        "format": "png",
+        "quality": 95
+      }
+    }
+  ],
+  "edges": [
+    {"fromNode": "n1", "fromPort": "image", "toNode": "n2", "toPort": "image"},
+    {"fromNode": "n1", "fromPort": "image", "toNode": "n3", "toPort": "image"},
+    {"fromNode": "n1", "fromPort": "image", "toNode": "n4", "toPort": "image"},
+    {"fromNode": "n2", "fromPort": "image", "toNode": "n5", "toPort": "base"},
+    {"fromNode": "n3", "fromPort": "image", "toNode": "n5", "toPort": "overlay"},
+    {"fromNode": "n4", "fromPort": "mask", "toNode": "n5", "toPort": "mask"},
+    {"fromNode": "n5", "fromPort": "image", "toNode": "n6", "toPort": "image"}
+  ]
+}
+
