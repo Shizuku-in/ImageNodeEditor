@@ -16,7 +16,8 @@ enum class ParameterKind {
     Bool,
     String,
     Color,
-    Choice
+    Choice,
+    FilePath
 };
 
 struct ParameterSpec {

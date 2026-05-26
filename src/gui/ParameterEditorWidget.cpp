@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QEvent>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -102,6 +103,38 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
             emit parametersChanged();
         });
         return editor;
+    }
+    case ParameterKind::FilePath: {
+        auto *container = new QWidget(this);
+        auto *hbox = new QHBoxLayout(container);
+        hbox->setContentsMargins(0, 0, 0, 0);
+        hbox->setSpacing(4);
+        auto *lineEdit = new QLineEdit(node->parameter(spec.name).toString(), container);
+        auto *browseBtn = new QPushButton(QString::fromUtf8("\xe2\x80\xa6"), container);
+        browseBtn->setFixedWidth(28);
+        hbox->addWidget(lineEdit, 1);
+        hbox->addWidget(browseBtn);
+        connect(lineEdit, &QLineEdit::editingFinished, this, [this, lineEdit, node, name = spec.name]() {
+            node->setParameter(name, lineEdit->text());
+            emit parametersChanged();
+        });
+        const bool isSave = !spec.choices.isEmpty() && spec.choices.first() == "save";
+        const QString filter = spec.choices.size() > 1 ? spec.choices.at(1) : QString();
+        connect(browseBtn, &QPushButton::clicked, this, [this, lineEdit, node, name = spec.name, isSave, filter]() {
+            QWidget *dialogParent = window();
+            QString path;
+            if (isSave) {
+                path = QFileDialog::getSaveFileName(dialogParent, tr("Select File"), lineEdit->text(), filter);
+            } else {
+                path = QFileDialog::getOpenFileName(dialogParent, tr("Select File"), lineEdit->text(), filter);
+            }
+            if (!path.isEmpty()) {
+                lineEdit->setText(path);
+                node->setParameter(name, path);
+                emit parametersChanged();
+            }
+        });
+        return container;
     }
     case ParameterKind::String:
     case ParameterKind::Color: {

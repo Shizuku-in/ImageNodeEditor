@@ -235,7 +235,8 @@ QString NodeItem::formatParamValue(const ParameterSpec &spec, const QVariant &va
         return value.toBool() ? QString::fromUtf8("\xe2\x9c\x93") : QString::fromUtf8("\xe2\x9c\x97");
     case ParameterKind::Double:
         return QString::number(value.toDouble(), 'f', 2);
-    case ParameterKind::String: {
+    case ParameterKind::String:
+    case ParameterKind::FilePath: {
         QString s = value.toString();
         if (s.length() > 18) {
             s = s.left(16) + QString::fromUtf8("\xe2\x80\xa6");

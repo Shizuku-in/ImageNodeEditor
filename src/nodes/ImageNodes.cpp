@@ -96,7 +96,7 @@ public:
     QVector<PortSpec> outputPorts() const override { return imageOut(); }
     QVector<ParameterSpec> parameterSpecs() const override
     {
-        return {{"path", trNodes("Path"), ParameterKind::String, ""}};
+        return {{"path", trNodes("Path"), ParameterKind::FilePath, "", 0, 0, 1, {"open", "Images (*.png *.jpg *.jpeg *.bmp *.gif *.tiff);;All files (*)"}}};
     }
     NodeResult process(const QHash<QString, DataValue> &) override
     {
@@ -124,7 +124,7 @@ public:
     QVector<ParameterSpec> parameterSpecs() const override
     {
         return {
-            {"path", trNodes("Path"), ParameterKind::String, "output/result.png"},
+            {"path", trNodes("Path"), ParameterKind::FilePath, "output/result.png", 0, 0, 1, {"save", "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;All files (*)"}},
             {"format", trNodes("Format"), ParameterKind::Choice, "png", 0, 0, 1, {"png", "jpg", "bmp"}},
             {"quality", trNodes("Quality"), ParameterKind::Int, 95, 1, 100, 1}
         };
