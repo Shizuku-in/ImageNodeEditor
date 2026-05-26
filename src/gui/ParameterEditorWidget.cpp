@@ -7,10 +7,14 @@
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QSvgRenderer>
 #include <QVBoxLayout>
 
 ParameterEditorWidget::ParameterEditorWidget(QWidget *parent)
@@ -142,6 +146,19 @@ ParameterPopup::ParameterPopup(QWidget *parent)
     m_closeButton = new QPushButton(this);
     m_closeButton->setFixedSize(28, 24);
     m_closeButton->setFlat(true);
+    {
+        static const QByteArray closeSvg =
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>"
+            "<path fill='#e5e7eb' d='M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/>"
+            "</svg>";
+        QSvgRenderer renderer(closeSvg);
+        QPixmap pixmap(16, 16);
+        pixmap.fill(Qt::transparent);
+        QPainter p(&pixmap);
+        renderer.render(&p);
+        m_closeButton->setIcon(QIcon(pixmap));
+        m_closeButton->setIconSize(QSize(16, 16));
+    }
     connect(m_closeButton, &QPushButton::clicked, this, &ParameterPopup::closeRequested);
 
     header->addLayout(titles, 1);
@@ -186,7 +203,6 @@ void ParameterPopup::retranslateUi()
         m_typeLabel->setText(m_node ? m_node->typeName() : QString());
     }
     if (m_closeButton) {
-        m_closeButton->setText(tr("Close"));
         m_closeButton->setToolTip(tr("Close"));
     }
 }

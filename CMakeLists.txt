@@ -10,7 +10,7 @@ set(CMAKE_AUTOUIC ON)
 
 include(CTest)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Core Test LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Core Svg Test LinguistTools)
 
 set(TS_FILES
     translations/ImageNodeEditor_zh_CN.ts
@@ -41,7 +41,7 @@ add_executable(ImageNodeEditor
 )
 
 target_include_directories(ImageNodeEditor PRIVATE src)
-target_link_libraries(ImageNodeEditor PRIVATE Qt6::Widgets Qt6::Gui Qt6::Core)
+target_link_libraries(ImageNodeEditor PRIVATE Qt6::Widgets Qt6::Gui Qt6::Core Qt6::Svg)
 
 qt_add_translation(QM_FILES ${TS_FILES})
 qt_add_lupdate(ImageNodeEditor TS_FILES ${TS_FILES})
