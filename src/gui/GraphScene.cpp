@@ -4,8 +4,10 @@
 
 #include <QBrush>
 #include <QGraphicsProxyWidget>
+#include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
+#include <QMenu>
 #include <QPainter>
 #include <QPen>
 #include <QSvgRenderer>
@@ -459,6 +461,27 @@ void GraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     QGraphicsScene::mouseReleaseEvent(event);
 }
 
+void GraphScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
+{
+    NodeItem *nodeItem = nodeItemAt(event->scenePos());
+    if (!nodeItem) {
+        QGraphicsScene::contextMenuEvent(event);
+        return;
+    }
+
+    nodeItem->setSelected(true);
+    QMenu menu;
+    QAction *deleteAction = menu.addAction(tr("Delete Node"));
+    QAction *selectedAction = menu.exec(event->screenPos());
+    if (selectedAction == deleteAction) {
+        closeParameterPopup();
+        m_graph->removeNode(nodeItem->nodeId());
+        rebuild();
+        emit graphChanged();
+    }
+    event->accept();
+}
+
 void GraphScene::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
@@ -495,6 +518,20 @@ PortItem *GraphScene::portAt(const QPointF &scenePos) const
     for (QGraphicsItem *item : items(scenePos)) {
         if (auto *port = dynamic_cast<PortItem *>(item)) {
             return port;
+        }
+    }
+    return nullptr;
+}
+
+NodeItem *GraphScene::nodeItemAt(const QPointF &scenePos) const
+{
+    for (QGraphicsItem *item : items(scenePos)) {
+        QGraphicsItem *current = item;
+        while (current) {
+            if (auto *nodeItem = dynamic_cast<NodeItem *>(current)) {
+                return nodeItem;
+            }
+            current = current->parentItem();
         }
     }
     return nullptr;

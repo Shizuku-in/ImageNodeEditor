@@ -10,6 +10,7 @@
 
 class QPainter;
 class ParameterPopup;
+class QGraphicsSceneContextMenuEvent;
 class QGraphicsProxyWidget;
 class QStyleOptionGraphicsItem;
 class NodeItem;
@@ -66,6 +67,7 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
@@ -73,6 +75,7 @@ private slots:
 
 private:
     PortItem *portAt(const QPointF &scenePos) const;
+    NodeItem *nodeItemAt(const QPointF &scenePos) const;
     void addEdgeItem(const Edge &edge);
 
     WorkflowGraph *m_graph = nullptr;
