@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QCoreApplication>
+#include <QFont>
 #include <QGuiApplication>
 #include <QSettings>
 #include <QTextStream>
@@ -102,6 +103,7 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+    app.setFont(QFont("Microsoft YaHei UI"));
     QApplication::setOrganizationName("ImageNodeEditor");
     QApplication::setApplicationName("ImageNodeEditor");
     QApplication::setApplicationVersion("1.0");

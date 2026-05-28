@@ -9,7 +9,7 @@
 GraphView::GraphView(QGraphicsScene *scene, QWidget *parent)
     : QGraphicsView(scene, parent)
 {
-    setRenderHint(QPainter::Antialiasing);
+    setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
 }

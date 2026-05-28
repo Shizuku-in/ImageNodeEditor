@@ -33,6 +33,18 @@ QColor typeColor(PortDataType type)
     return Qt::gray;
 }
 
+QFont clearTextFont(qreal pointSize = 0.0, bool bold = false)
+{
+    QFont font("Microsoft YaHei UI");
+    if (pointSize > 0.0) {
+        font.setPointSizeF(pointSize);
+    }
+    font.setBold(bold);
+    font.setHintingPreference(QFont::PreferFullHinting);
+    font.setStyleStrategy(QFont::PreferAntialias);
+    return font;
+}
+
 } // namespace
 
 PortItem::PortItem(NodeItem *owner, QString nodeId, QString portName, PortDirection direction, PortDataType dataType)
@@ -88,6 +100,7 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
     setPos(node->position());
 
     auto *title = new QGraphicsTextItem(node->title(), this);
+    title->setFont(clearTextFont(9.5, true));
     title->setDefaultTextColor(Qt::white);
     title->setPos(10, 4);
     title->setTextWidth(width - 44);
@@ -98,6 +111,7 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
         item->setPos(0, 44 + row * 24);
         m_ports.insert(portKey(port.name, PortDirection::Input), item);
         auto *label = new QGraphicsTextItem(port.displayName, this);
+        label->setFont(clearTextFont(8.5));
         label->setDefaultTextColor(QColor("#dbeafe"));
         label->setPos(12, 31 + row * 24);
         ++row;
@@ -109,6 +123,7 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
         item->setPos(width, 44 + row * 24);
         m_ports.insert(portKey(port.name, PortDirection::Output), item);
         auto *label = new QGraphicsTextItem(port.displayName, this);
+        label->setFont(clearTextFont(8.5));
         label->setDefaultTextColor(QColor("#fee2e2"));
         label->setPos(width - 82, 31 + row * 24);
         ++row;
@@ -117,8 +132,7 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
     // Parameter summary area
     m_paramStartY = portAreaEnd;
     if (paramCount > 0) {
-        QFont paramFont;
-        paramFont.setPointSizeF(8.0);
+        QFont paramFont = clearTextFont(8.0);
 
         for (int i = 0; i < paramCount; ++i) {
             const ParameterSpec &spec = specs[i];
@@ -208,8 +222,10 @@ void NodeItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
             painter->setBrush(QColor("#111827"));
             painter->drawRoundedRect(previewArea, 4, 4);
             painter->setPen(QColor("#4b5563"));
-            QFont placeholderFont;
+            QFont placeholderFont("Microsoft YaHei UI");
             placeholderFont.setPointSizeF(8.0);
+            placeholderFont.setHintingPreference(QFont::PreferFullHinting);
+            placeholderFont.setStyleStrategy(QFont::PreferAntialias);
             painter->setFont(placeholderFont);
             painter->drawText(previewArea, Qt::AlignCenter, "No Preview");
         } else {
