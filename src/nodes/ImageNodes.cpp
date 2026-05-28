@@ -150,6 +150,12 @@ public:
         result.outputs.insert("image", DataValue::image(image));
         return result;
     }
+    NodeResult preview(const QHash<QString, DataValue> &inputs) override
+    {
+        NodeResult result;
+        result.outputs.insert("image", DataValue::image(getImage(inputs, "image")));
+        return result;
+    }
 };
 
 class DisplayNode final : public Node

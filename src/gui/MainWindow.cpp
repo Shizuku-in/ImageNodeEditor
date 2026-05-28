@@ -9,6 +9,7 @@
 #include <QEvent>
 #include <QFileDialog>
 #include <QGraphicsView>
+#include <QImage>
 #include <QLabel>
 #include <QListWidget>
 #include <QMenu>
@@ -56,7 +57,10 @@ void MainWindow::setupUi()
     m_scene = new GraphScene(&m_graph, &m_factory, this);
     connect(m_scene, &GraphScene::nodeSelected, this, &MainWindow::onNodeSelected);
     connect(m_scene, &GraphScene::warningRaised, this, &MainWindow::showWarning);
-    connect(m_scene, &GraphScene::graphChanged, this, &MainWindow::markDirty);
+    connect(m_scene, &GraphScene::graphChanged, this, [this]() {
+        markDirty();
+        updateNodePreviews();
+    });
     auto *view = new QGraphicsView(m_scene, this);
     view->setRenderHint(QPainter::Antialiasing);
     view->setDragMode(QGraphicsView::RubberBandDrag);
@@ -121,6 +125,7 @@ void MainWindow::newWorkflow()
     m_graph.clear();
     m_executor.clear();
     m_scene->rebuild();
+    updateNodePreviews();
     markDirty();
 }
 
@@ -137,6 +142,7 @@ void MainWindow::openWorkflow()
     }
     m_executor.clear();
     m_scene->rebuild();
+    updateNodePreviews();
     appendLog(tr("Loaded %1").arg(path));
     m_dirty = false;
 }
@@ -202,6 +208,7 @@ void MainWindow::retranslateUi()
     populateNodeList();
     refreshDefaultNodeTitles();
     m_scene->rebuild();
+    updateNodePreviews();
 }
 
 void MainWindow::populateNodeList()
@@ -238,13 +245,70 @@ void MainWindow::refreshDefaultNodeTitles()
 
 void MainWindow::updateNodePreviews()
 {
+    QHash<QString, QHash<QString, DataValue>> liveOutputs;
+    QString topoError;
+    const QList<QString> order = m_graph.topologicalOrder(&topoError);
+
+    if (!topoError.isEmpty()) {
+        for (Node *node : m_graph.nodes()) {
+            if (node->supportsPreview()) {
+                if (NodeItem *item = m_scene->nodeItem(node->id())) {
+                    item->setPreviewImage(QImage());
+                }
+            }
+        }
+        return;
+    }
+
+    const QList<Edge> edges = m_graph.edges();
     for (Node *node : m_graph.nodes()) {
-        if (!node->supportsPreview()) continue;
-        NodeItem *item = m_scene->nodeItem(node->id());
-        if (!item) continue;
-        const auto outputs = m_executor.outputs().value(node->id());
-        if (outputs.contains("image")) {
-            item->setPreviewImage(outputs.value("image").asImage());
+        if (node->supportsPreview()) {
+            if (NodeItem *item = m_scene->nodeItem(node->id())) {
+                item->setPreviewImage(QImage());
+            }
+        }
+    }
+
+    for (const QString &nodeId : order) {
+        Node *node = m_graph.node(nodeId);
+        if (!node) {
+            continue;
+        }
+
+        QHash<QString, DataValue> inputs;
+        bool missingInput = false;
+        for (const Edge &edge : edges) {
+            if (edge.toNode != nodeId) {
+                continue;
+            }
+            const auto upstreamOutputs = liveOutputs.value(edge.fromNode);
+            if (!upstreamOutputs.contains(edge.fromPort)) {
+                missingInput = true;
+                break;
+            }
+            inputs.insert(edge.toPort, upstreamOutputs.value(edge.fromPort));
+        }
+        for (const PortSpec &input : node->inputPorts()) {
+            if (input.required && !inputs.contains(input.name)) {
+                missingInput = true;
+                break;
+            }
+        }
+        if (missingInput) {
+            continue;
+        }
+
+        const NodeResult result = node->preview(inputs);
+        if (!result.ok) {
+            continue;
+        }
+        liveOutputs.insert(nodeId, result.outputs);
+
+        if (node->supportsPreview()) {
+            NodeItem *item = m_scene->nodeItem(nodeId);
+            if (item && result.outputs.contains("image")) {
+                item->setPreviewImage(result.outputs.value("image").asImage());
+            }
         }
     }
 }

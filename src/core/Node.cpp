@@ -65,6 +65,11 @@ void Node::setParameter(const QString &name, const QVariant &value)
     m_parameters[name] = value;
 }
 
+NodeResult Node::preview(const QHash<QString, DataValue> &inputs)
+{
+    return process(inputs);
+}
+
 std::optional<PortSpec> Node::findPort(PortDirection direction, const QString &name) const
 {
     const auto ports = direction == PortDirection::Input ? inputPorts() : outputPorts();

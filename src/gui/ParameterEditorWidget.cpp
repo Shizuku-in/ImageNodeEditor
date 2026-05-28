@@ -117,8 +117,8 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
         browseBtn->setFixedWidth(28);
         hbox->addWidget(lineEdit, 1);
         hbox->addWidget(browseBtn);
-        connect(lineEdit, &QLineEdit::editingFinished, this, [this, lineEdit, node, name = spec.name]() {
-            node->setParameter(name, lineEdit->text());
+        connect(lineEdit, &QLineEdit::textEdited, this, [this, node, name = spec.name](const QString &text) {
+            node->setParameter(name, text);
             emit parametersChanged();
         });
         const bool isSave = !spec.choices.isEmpty() && spec.choices.first() == "save";
@@ -255,4 +255,3 @@ void ParameterPopup::retranslateUi()
         m_closeButton->setToolTip(tr("Close"));
     }
 }
-
