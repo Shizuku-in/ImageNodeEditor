@@ -1,6 +1,7 @@
 #include "gui/MainWindow.h"
 
 #include "gui/GraphScene.h"
+#include "gui/GraphView.h"
 #include "i18n/LanguageManager.h"
 #include "io/WorkflowSerializer.h"
 #include "nodes/ImageNodes.h"
@@ -8,7 +9,6 @@
 #include <QAction>
 #include <QEvent>
 #include <QFileDialog>
-#include <QGraphicsView>
 #include <QImage>
 #include <QLabel>
 #include <QListWidget>
@@ -61,9 +61,7 @@ void MainWindow::setupUi()
         markDirty();
         updateNodePreviews();
     });
-    auto *view = new QGraphicsView(m_scene, this);
-    view->setRenderHint(QPainter::Antialiasing);
-    view->setDragMode(QGraphicsView::RubberBandDrag);
+    auto *view = new GraphView(m_scene, this);
 
     m_log = new QPlainTextEdit(this);
     m_log->setReadOnly(true);
