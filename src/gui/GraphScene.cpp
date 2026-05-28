@@ -6,11 +6,13 @@
 #include <QGraphicsProxyWidget>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsView>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QPainter>
 #include <QPen>
 #include <QSvgRenderer>
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -263,6 +265,7 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant &value)
         m_node->setPosition(pos());
         if (m_graphScene) {
             m_graphScene->refreshEdges();
+            m_graphScene->updateParameterPopupPosition();
         }
     }
     return QGraphicsRectItem::itemChange(change, value);
@@ -390,6 +393,7 @@ void GraphScene::showParameterPopup(const QString &nodeId)
 
     closeParameterPopup();
     emit editNodeRequested(nodeId);
+    m_parameterNodeId = nodeId;
 
     m_parameterPopup = new ParameterPopup();
     m_parameterPopup->setNode(node);
@@ -402,29 +406,63 @@ void GraphScene::showParameterPopup(const QString &nodeId)
     m_parameterProxy = addWidget(m_parameterPopup);
     m_parameterProxy->setZValue(20);
     m_parameterPopup->adjustSize();
+    updateParameterPopupPosition();
+}
 
+void GraphScene::updateParameterPopupPosition()
+{
+    if (!m_parameterProxy || m_parameterNodeId.isEmpty()) {
+        return;
+    }
+
+    NodeItem *item = nodeItem(m_parameterNodeId);
+    if (!item) {
+        return;
+    }
+
+    constexpr qreal gap = 12.0;
+    constexpr qreal margin = 8.0;
     const QRectF nodeRect = item->sceneBoundingRect();
     const QSizeF popupSize = m_parameterProxy->boundingRect().size();
-    QPointF popupPos = nodeRect.topRight() + QPointF(16, 0);
-    if (popupPos.x() + popupSize.width() > sceneRect().right()) {
-        popupPos = nodeRect.bottomLeft() + QPointF(0, 16);
+    const QRectF bounds = visibleViewRect().adjusted(margin, margin, -margin, -margin);
+
+    QPointF popupPos = nodeRect.topRight() + QPointF(gap, 0);
+    if (popupPos.x() + popupSize.width() > bounds.right()) {
+        popupPos.setX(nodeRect.left() - gap - popupSize.width());
     }
-    if (popupPos.y() + popupSize.height() > sceneRect().bottom()) {
-        popupPos.setY(nodeRect.top() - popupSize.height() - 16);
-    }
+
+    const qreal minX = bounds.left();
+    const qreal maxX = bounds.width() > popupSize.width() ? bounds.right() - popupSize.width() : bounds.left();
+    const qreal minY = bounds.top();
+    const qreal maxY = bounds.height() > popupSize.height() ? bounds.bottom() - popupSize.height() : bounds.top();
+
+    popupPos.setX(std::clamp(popupPos.x(), minX, maxX));
+    popupPos.setY(std::clamp(popupPos.y(), minY, maxY));
+
     m_parameterProxy->setPos(popupPos);
+}
+
+QRectF GraphScene::visibleViewRect() const
+{
+    const QList<QGraphicsView *> attachedViews = views();
+    if (attachedViews.isEmpty() || !attachedViews.first()->viewport()) {
+        return sceneRect();
+    }
+    return attachedViews.first()->mapToScene(attachedViews.first()->viewport()->rect()).boundingRect();
 }
 
 void GraphScene::closeParameterPopup()
 {
     if (!m_parameterProxy) {
         m_parameterPopup = nullptr;
+        m_parameterNodeId.clear();
         return;
     }
     removeItem(m_parameterProxy);
     delete m_parameterProxy;
     m_parameterProxy = nullptr;
     m_parameterPopup = nullptr;
+    m_parameterNodeId.clear();
 }
 
 void GraphScene::mousePressEvent(QGraphicsSceneMouseEvent *event)

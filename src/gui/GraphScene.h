@@ -56,6 +56,7 @@ public:
     NodeItem *nodeItem(const QString &nodeId) const;
     void showParameterPopup(const QString &nodeId);
     void closeParameterPopup();
+    void updateParameterPopupPosition();
 
 signals:
     void nodeSelected(const QString &nodeId);
@@ -76,6 +77,7 @@ private slots:
 private:
     PortItem *portAt(const QPointF &scenePos) const;
     NodeItem *nodeItemAt(const QPointF &scenePos) const;
+    QRectF visibleViewRect() const;
     void addEdgeItem(const Edge &edge);
 
     WorkflowGraph *m_graph = nullptr;
@@ -84,6 +86,7 @@ private:
     QList<EdgeItem *> m_edgeItems;
     QGraphicsProxyWidget *m_parameterProxy = nullptr;
     ParameterPopup *m_parameterPopup = nullptr;
+    QString m_parameterNodeId;
     PortItem *m_connectStart = nullptr;
     QGraphicsLineItem *m_tempLine = nullptr;
 };

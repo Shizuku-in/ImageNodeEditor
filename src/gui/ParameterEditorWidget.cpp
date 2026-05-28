@@ -169,7 +169,11 @@ ParameterPopup::ParameterPopup(QWidget *parent)
     : QWidget(parent)
 {
     setObjectName("ParameterPopup");
-    setMinimumWidth(280);
+    setMinimumWidth(240);
+    setMaximumWidth(280);
+    QFont popupFont("Microsoft YaHei UI");
+    popupFont.setPointSizeF(8.5);
+    setFont(popupFont);
     setStyleSheet(
         "QWidget#ParameterPopup { background: #202124; border: 1px solid #5f6368; border-radius: 6px; }"
         "QLabel { color: #f8fafc; }"
@@ -177,8 +181,8 @@ ParameterPopup::ParameterPopup(QWidget *parent)
     );
 
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(12, 10, 12, 12);
-    layout->setSpacing(8);
+    layout->setContentsMargins(10, 8, 10, 10);
+    layout->setSpacing(6);
 
     auto *header = new QHBoxLayout();
     auto *titles = new QVBoxLayout();
@@ -186,6 +190,7 @@ ParameterPopup::ParameterPopup(QWidget *parent)
     m_titleLabel = new QLabel(this);
     QFont titleFont = m_titleLabel->font();
     titleFont.setBold(true);
+    titleFont.setPointSizeF(9.5);
     m_titleLabel->setFont(titleFont);
     m_typeLabel = new QLabel(this);
     m_typeLabel->setObjectName("TypeLabel");
