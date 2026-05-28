@@ -261,6 +261,11 @@
         <translation>图像列表</translation>
     </message>
     <message>
+        <location filename="../src/nodes/ImageNodes.cpp" line="34"/>
+        <source>Image %1</source>
+        <translation>图像 %1</translation>
+    </message>
+    <message>
         <location filename="../src/nodes/ImageNodes.cpp" line="33"/>
         <source>Image 1</source>
         <translation>图像 1</translation>
@@ -294,6 +299,11 @@
         <location filename="../src/nodes/ImageNodes.cpp" line="39"/>
         <source>Quality</source>
         <translation>质量</translation>
+    </message>
+    <message>
+        <location filename="../src/nodes/ImageNodes.cpp" line="38"/>
+        <source>Count</source>
+        <translation>数量</translation>
     </message>
     <message>
         <location filename="../src/nodes/ImageNodes.cpp" line="40"/>
@@ -389,6 +399,31 @@
         <location filename="../src/nodes/ImageNodes.cpp" line="58"/>
         <source>Color</source>
         <translation>颜色</translation>
+    </message>
+    <message>
+        <location filename="../src/nodes/ImageNodes.cpp" line="58"/>
+        <source>Layout</source>
+        <translation>布局</translation>
+    </message>
+    <message>
+        <location filename="../src/nodes/ImageNodes.cpp" line="59"/>
+        <source>Horizontal</source>
+        <translation>横向</translation>
+    </message>
+    <message>
+        <location filename="../src/nodes/ImageNodes.cpp" line="60"/>
+        <source>Vertical</source>
+        <translation>竖向</translation>
+    </message>
+    <message>
+        <location filename="../src/nodes/ImageNodes.cpp" line="61"/>
+        <source>Grid</source>
+        <translation>网格</translation>
+    </message>
+    <message>
+        <location filename="../src/nodes/ImageNodes.cpp" line="62"/>
+        <source>Rows</source>
+        <translation>行数</translation>
     </message>
     <message>
         <location filename="../src/nodes/ImageNodes.cpp" line="59"/>

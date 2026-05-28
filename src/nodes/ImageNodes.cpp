@@ -6,6 +6,7 @@
 #include <QColor>
 #include <QDir>
 #include <QFileInfo>
+#include <algorithm>
 
 namespace {
 
@@ -30,13 +31,11 @@ namespace {
     QT_TRANSLATE_NOOP("Nodes", "Overlay"),
     QT_TRANSLATE_NOOP("Nodes", "Mask"),
     QT_TRANSLATE_NOOP("Nodes", "Images"),
-    QT_TRANSLATE_NOOP("Nodes", "Image 1"),
-    QT_TRANSLATE_NOOP("Nodes", "Image 2"),
-    QT_TRANSLATE_NOOP("Nodes", "Image 3"),
-    QT_TRANSLATE_NOOP("Nodes", "Image 4"),
+    QT_TRANSLATE_NOOP("Nodes", "Image %1"),
     QT_TRANSLATE_NOOP("Nodes", "Path"),
     QT_TRANSLATE_NOOP("Nodes", "Format"),
     QT_TRANSLATE_NOOP("Nodes", "Quality"),
+    QT_TRANSLATE_NOOP("Nodes", "Count"),
     QT_TRANSLATE_NOOP("Nodes", "X"),
     QT_TRANSLATE_NOOP("Nodes", "Y"),
     QT_TRANSLATE_NOOP("Nodes", "Width"),
@@ -56,6 +55,11 @@ namespace {
     QT_TRANSLATE_NOOP("Nodes", "Text"),
     QT_TRANSLATE_NOOP("Nodes", "Font Size"),
     QT_TRANSLATE_NOOP("Nodes", "Color"),
+    QT_TRANSLATE_NOOP("Nodes", "Layout"),
+    QT_TRANSLATE_NOOP("Nodes", "Horizontal"),
+    QT_TRANSLATE_NOOP("Nodes", "Vertical"),
+    QT_TRANSLATE_NOOP("Nodes", "Grid"),
+    QT_TRANSLATE_NOOP("Nodes", "Rows"),
     QT_TRANSLATE_NOOP("Nodes", "Columns"),
     QT_TRANSLATE_NOOP("Nodes", "Gap"),
     QT_TRANSLATE_NOOP("Nodes", "Background"),
@@ -433,22 +437,33 @@ public:
     QString typeName() const override { return "ImageToList"; }
     QVector<PortSpec> inputPorts() const override
     {
-        return {
-            {"image1", trNodes("Image 1"), PortDirection::Input, PortDataType::Image, true},
-            {"image2", trNodes("Image 2"), PortDirection::Input, PortDataType::Image, false},
-            {"image3", trNodes("Image 3"), PortDirection::Input, PortDataType::Image, false},
-            {"image4", trNodes("Image 4"), PortDirection::Input, PortDataType::Image, false}
-        };
+        QVector<PortSpec> ports;
+        const int count = imageCount();
+        ports.reserve(count);
+        for (int i = 1; i <= count; ++i) {
+            ports.append({
+                QString("image%1").arg(i),
+                trNodes("Image %1").arg(i),
+                PortDirection::Input,
+                PortDataType::Image,
+                i == 1
+            });
+        }
+        return ports;
     }
     QVector<PortSpec> outputPorts() const override
     {
         return {{"images", trNodes("Images"), PortDirection::Output, PortDataType::ImageList, true}};
     }
-    QVector<ParameterSpec> parameterSpecs() const override { return {}; }
+    QVector<ParameterSpec> parameterSpecs() const override
+    {
+        return {{"count", trNodes("Count"), ParameterKind::Int, 4, 1, 12}};
+    }
     NodeResult process(const QHash<QString, DataValue> &inputs) override
     {
         QVector<QImage> images;
-        for (const QString name : {"image1", "image2", "image3", "image4"}) {
+        for (int i = 1; i <= imageCount(); ++i) {
+            const QString name = QString("image%1").arg(i);
             if (inputs.contains(name)) {
                 images.append(inputs.value(name).asImage());
             }
@@ -456,6 +471,12 @@ public:
         NodeResult result;
         result.outputs.insert("images", DataValue::imageList(images));
         return result;
+    }
+
+private:
+    int imageCount() const
+    {
+        return std::clamp(parameter("count").toInt(), 1, 12);
     }
 };
 
@@ -472,6 +493,8 @@ public:
     QVector<ParameterSpec> parameterSpecs() const override
     {
         return {
+            {"layout", trNodes("Layout"), ParameterKind::Choice, "Grid", 0, 0, 1, {"Horizontal", "Vertical", "Grid"}},
+            {"rows", trNodes("Rows"), ParameterKind::Int, 0, 0, 20},
             {"columns", trNodes("Columns"), ParameterKind::Int, 2, 1, 10},
             {"gap", trNodes("Gap"), ParameterKind::Int, 12, 0, 200},
             {"background", trNodes("Background"), ParameterKind::Color, "#202020"}
@@ -484,8 +507,18 @@ public:
         if (!bg.isValid()) {
             bg = QColor("#202020");
         }
-        QImage out = imageops::collage(inputs.value("images").asImageList(), parameter("columns").toInt(),
-                                       parameter("gap").toInt(), bg, &error);
+        const QVector<QImage> images = inputs.value("images").asImageList();
+        int rows = parameter("rows").toInt();
+        int columns = parameter("columns").toInt();
+        const QString layout = parameter("layout").toString();
+        if (layout == "Horizontal") {
+            rows = 1;
+            columns = images.size();
+        } else if (layout == "Vertical") {
+            rows = images.size();
+            columns = 1;
+        }
+        QImage out = imageops::collage(images, rows, columns, parameter("gap").toInt(), bg, &error);
         if (out.isNull()) {
             return NodeResult::failure(error);
         }

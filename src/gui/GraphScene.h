@@ -78,6 +78,7 @@ private:
     PortItem *portAt(const QPointF &scenePos) const;
     NodeItem *nodeItemAt(const QPointF &scenePos) const;
     QRectF visibleViewRect() const;
+    void removeInvalidEdgesForNode(const QString &nodeId);
     void addEdgeItem(const Edge &edge);
 
     WorkflowGraph *m_graph = nullptr;

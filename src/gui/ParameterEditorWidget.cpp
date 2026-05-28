@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDoubleSpinBox>
 #include <QEvent>
 #include <QFileDialog>
@@ -20,6 +21,41 @@
 #include <QSvgRenderer>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <utility>
+
+namespace {
+
+class SvgButton final : public QPushButton
+{
+public:
+    explicit SvgButton(QByteArray svgData, QWidget *parent = nullptr)
+        : QPushButton(parent)
+        , m_svgData(std::move(svgData))
+    {
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        QPushButton::paintEvent(event);
+
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        QSvgRenderer renderer(m_svgData);
+        const qreal iconSize = qMin(width(), height()) - 8;
+        const QRectF iconRect((width() - iconSize) / 2.0,
+                              (height() - iconSize) / 2.0,
+                              iconSize,
+                              iconSize);
+        renderer.render(&painter, iconRect);
+    }
+
+private:
+    QByteArray m_svgData;
+};
+
+} // namespace
 
 ParameterEditorWidget::ParameterEditorWidget(QWidget *parent)
     : QWidget(parent)
@@ -73,6 +109,7 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
         connect(editor, &QSpinBox::valueChanged, this, [this, node, name = spec.name](int value) {
             node->setParameter(name, value);
             emit parametersChanged();
+            emit parameterChanged(name);
         });
         return editor;
     }
@@ -85,6 +122,7 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
         connect(editor, &QDoubleSpinBox::valueChanged, this, [this, node, name = spec.name](double value) {
             node->setParameter(name, value);
             emit parametersChanged();
+            emit parameterChanged(name);
         });
         return editor;
     }
@@ -94,16 +132,22 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
         connect(editor, &QCheckBox::toggled, this, [this, node, name = spec.name](bool value) {
             node->setParameter(name, value);
             emit parametersChanged();
+            emit parameterChanged(name);
         });
         return editor;
     }
     case ParameterKind::Choice: {
         auto *editor = new QComboBox(this);
-        editor->addItems(spec.choices);
-        editor->setCurrentText(node->parameter(spec.name).toString());
-        connect(editor, &QComboBox::currentTextChanged, this, [this, node, name = spec.name](const QString &value) {
+        for (const QString &choice : spec.choices) {
+            editor->addItem(QCoreApplication::translate("Nodes", choice.toUtf8().constData()), choice);
+        }
+        const int index = editor->findData(node->parameter(spec.name).toString());
+        editor->setCurrentIndex(index >= 0 ? index : 0);
+        connect(editor, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, editor, node, name = spec.name](int index) {
+            const QString value = editor->itemData(index).toString();
             node->setParameter(name, value);
             emit parametersChanged();
+            emit parameterChanged(name);
         });
         return editor;
     }
@@ -120,6 +164,7 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
         connect(lineEdit, &QLineEdit::textEdited, this, [this, node, name = spec.name](const QString &text) {
             node->setParameter(name, text);
             emit parametersChanged();
+            emit parameterChanged(name);
         });
         const bool isSave = !spec.choices.isEmpty() && spec.choices.first() == "save";
         const QString filter = spec.choices.size() > 1 ? spec.choices.at(1) : QString();
@@ -146,6 +191,7 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
                     }
                     if (self) {
                         emit self->parametersChanged();
+                        emit self->parameterChanged(name);
                     }
                 }
             });
@@ -158,6 +204,7 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
         connect(editor, &QLineEdit::editingFinished, this, [this, editor, node, name = spec.name]() {
             node->setParameter(name, editor->text());
             emit parametersChanged();
+            emit parameterChanged(name);
         });
         return editor;
     }
@@ -197,22 +244,13 @@ ParameterPopup::ParameterPopup(QWidget *parent)
     titles->addWidget(m_titleLabel);
     titles->addWidget(m_typeLabel);
 
-    m_closeButton = new QPushButton(this);
+    static const QByteArray closeSvg =
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>"
+        "<path fill='#e5e7eb' d='M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/>"
+        "</svg>";
+    m_closeButton = new SvgButton(closeSvg, this);
     m_closeButton->setFixedSize(28, 24);
     m_closeButton->setFlat(true);
-    {
-        static const QByteArray closeSvg =
-            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>"
-            "<path fill='#e5e7eb' d='M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/>"
-            "</svg>";
-        QSvgRenderer renderer(closeSvg);
-        QPixmap pixmap(16, 16);
-        pixmap.fill(Qt::transparent);
-        QPainter p(&pixmap);
-        renderer.render(&p);
-        m_closeButton->setIcon(QIcon(pixmap));
-        m_closeButton->setIconSize(QSize(16, 16));
-    }
     connect(m_closeButton, &QPushButton::clicked, this, &ParameterPopup::closeRequested);
 
     header->addLayout(titles, 1);
@@ -226,6 +264,7 @@ ParameterPopup::ParameterPopup(QWidget *parent)
 
     m_editor = new ParameterEditorWidget(this);
     connect(m_editor, &ParameterEditorWidget::parametersChanged, this, &ParameterPopup::parametersChanged);
+    connect(m_editor, &ParameterEditorWidget::parameterChanged, this, &ParameterPopup::parameterChanged);
     layout->addWidget(m_editor);
 
     retranslateUi();

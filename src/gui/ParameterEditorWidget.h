@@ -18,6 +18,7 @@ public:
 
 signals:
     void parametersChanged();
+    void parameterChanged(const QString &name);
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -42,6 +43,7 @@ public:
 signals:
     void closeRequested();
     void parametersChanged();
+    void parameterChanged(const QString &name);
 
 protected:
     void changeEvent(QEvent *event) override;

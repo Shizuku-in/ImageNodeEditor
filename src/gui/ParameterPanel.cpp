@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDoubleSpinBox>
 #include <QEvent>
 #include <QFileDialog>
@@ -95,9 +96,13 @@ QWidget *ParameterPanel::editorFor(const ParameterSpec &spec, Node *node)
     }
     case ParameterKind::Choice: {
         auto *editor = new QComboBox(this);
-        editor->addItems(spec.choices);
-        editor->setCurrentText(node->parameter(spec.name).toString());
-        connect(editor, &QComboBox::currentTextChanged, this, [this, node, name = spec.name](const QString &value) {
+        for (const QString &choice : spec.choices) {
+            editor->addItem(QCoreApplication::translate("Nodes", choice.toUtf8().constData()), choice);
+        }
+        const int index = editor->findData(node->parameter(spec.name).toString());
+        editor->setCurrentIndex(index >= 0 ? index : 0);
+        connect(editor, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, editor, node, name = spec.name](int index) {
+            const QString value = editor->itemData(index).toString();
             node->setParameter(name, value);
             emit parametersChanged();
         });

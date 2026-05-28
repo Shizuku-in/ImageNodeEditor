@@ -257,18 +257,27 @@ QImage textOverlay(const QImage &image, const QString &text, int fontSize, const
 
 QImage collage(const QVector<QImage> &images, int columns, int gap, const QColor &background, QString *error)
 {
+    return collage(images, 0, columns, gap, background, error);
+}
+
+QImage collage(const QVector<QImage> &images, int rows, int columns, int gap, const QColor &background, QString *error)
+{
     if (images.isEmpty()) {
         if (error) *error = "Collage needs at least one image.";
         return {};
     }
     columns = std::max(1, columns);
+    rows = rows <= 0 ? qCeil(images.size() / static_cast<double>(columns)) : rows;
+    if (rows * columns < images.size()) {
+        if (error) *error = "Collage rows and columns cannot fit all images.";
+        return {};
+    }
     gap = std::max(0, gap);
     QSize cell(1, 1);
     for (const QImage &image : images) {
         cell.setWidth(std::max(cell.width(), image.width()));
         cell.setHeight(std::max(cell.height(), image.height()));
     }
-    const int rows = qCeil(images.size() / static_cast<double>(columns));
     QImage result(columns * cell.width() + (columns + 1) * gap,
                   rows * cell.height() + (rows + 1) * gap,
                   QImage::Format_ARGB32);

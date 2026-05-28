@@ -12,6 +12,7 @@
 #include <QPainter>
 #include <QPen>
 #include <QSvgRenderer>
+#include <QTimer>
 #include <algorithm>
 #include <cmath>
 
@@ -402,6 +403,17 @@ void GraphScene::showParameterPopup(const QString &nodeId)
         item->refreshParameterLabels();
         emit graphChanged();
     });
+    connect(m_parameterPopup, &ParameterPopup::parameterChanged, this, [this, nodeId](const QString &name) {
+        Node *node = m_graph->node(nodeId);
+        if (node && node->typeName() == "ImageToList" && name == "count") {
+            removeInvalidEdgesForNode(nodeId);
+            QTimer::singleShot(0, this, [this, nodeId]() {
+                rebuild();
+                showParameterPopup(nodeId);
+                emit graphChanged();
+            });
+        }
+    });
 
     m_parameterProxy = addWidget(m_parameterPopup);
     m_parameterProxy->setZValue(20);
@@ -589,6 +601,23 @@ NodeItem *GraphScene::nodeItemAt(const QPointF &scenePos) const
         }
     }
     return nullptr;
+}
+
+void GraphScene::removeInvalidEdgesForNode(const QString &nodeId)
+{
+    const QList<Edge> currentEdges = m_graph->edges();
+    for (const Edge &edge : currentEdges) {
+        if (edge.fromNode != nodeId && edge.toNode != nodeId) {
+            continue;
+        }
+        Node *from = m_graph->node(edge.fromNode);
+        Node *to = m_graph->node(edge.toNode);
+        if (!from || !to
+            || !from->findPort(PortDirection::Output, edge.fromPort)
+            || !to->findPort(PortDirection::Input, edge.toPort)) {
+            m_graph->removeEdge(edge);
+        }
+    }
 }
 
 void GraphScene::addEdgeItem(const Edge &edge)
