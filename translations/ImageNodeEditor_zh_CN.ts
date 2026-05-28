@@ -51,6 +51,11 @@
         <source>Unknown node type: %1</source>
         <translation>未知节点类型：%1</translation>
     </message>
+    <message>
+        <location filename="../src/gui/GraphScene.cpp" line="474"/>
+        <source>Delete Node</source>
+        <translation>删除节点</translation>
+    </message>
 </context>
 <context>
     <name>MainWindow</name>
