@@ -94,6 +94,7 @@ public:
     QString typeName() const override { return "ImageInput"; }
     QVector<PortSpec> inputPorts() const override { return {}; }
     QVector<PortSpec> outputPorts() const override { return imageOut(); }
+    bool supportsPreview() const override { return true; }
     QVector<ParameterSpec> parameterSpecs() const override
     {
         return {{"path", trNodes("Path"), ParameterKind::FilePath, "", 0, 0, 1, {"open", "Images (*.png *.jpg *.jpeg *.bmp *.gif *.tiff);;All files (*)"}}};
@@ -121,6 +122,7 @@ public:
     QString typeName() const override { return "ImageExport"; }
     QVector<PortSpec> inputPorts() const override { return imageIn(); }
     QVector<PortSpec> outputPorts() const override { return imageOut(); }
+    bool supportsPreview() const override { return true; }
     QVector<ParameterSpec> parameterSpecs() const override
     {
         return {

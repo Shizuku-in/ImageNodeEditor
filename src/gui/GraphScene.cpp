@@ -67,6 +67,7 @@ Edge EdgeItem::edge() const
 NodeItem::NodeItem(Node *node, GraphScene *scene)
     : m_node(node)
     , m_graphScene(scene)
+    , m_supportsPreview(node->supportsPreview())
 {
     const int inputCount = node->inputPorts().size();
     const int outputCount = node->outputPorts().size();
@@ -76,7 +77,8 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
     const qreal width = 190;
     const qreal portAreaEnd = 52 + rows * 24;
     const qreal paramAreaHeight = paramCount > 0 ? 6 + paramCount * 18 : 0;
-    const qreal height = portAreaEnd + paramAreaHeight;
+    const qreal previewAreaHeight = m_supportsPreview ? 130 : 0;
+    const qreal height = portAreaEnd + paramAreaHeight + previewAreaHeight;
     setRect(0, 0, width, height);
     setBrush(QColor("#1f2937"));
     setPen(QPen(QColor("#64748b"), 1.2));
@@ -127,6 +129,9 @@ NodeItem::NodeItem(Node *node, GraphScene *scene)
             m_paramLabels.append(label);
         }
     }
+
+    // Preview area
+    m_previewY = portAreaEnd + paramAreaHeight;
 }
 
 QString NodeItem::nodeId() const
@@ -184,6 +189,40 @@ void NodeItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     if (!m_paramLabels.isEmpty()) {
         painter->setPen(QPen(QColor("#3f3f46"), 0.8));
         painter->drawLine(QPointF(8, m_paramStartY), QPointF(rect().width() - 8, m_paramStartY));
+    }
+
+    // Draw preview image
+    if (m_supportsPreview) {
+        const qreal pad = 8;
+        const QRectF previewArea(pad, m_previewY + 4, rect().width() - pad * 2, 122);
+
+        // Draw separator above preview
+        painter->setPen(QPen(QColor("#3f3f46"), 0.8));
+        painter->drawLine(QPointF(8, m_previewY), QPointF(rect().width() - 8, m_previewY));
+
+        if (m_previewImage.isNull()) {
+            // Draw placeholder
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor("#111827"));
+            painter->drawRoundedRect(previewArea, 4, 4);
+            painter->setPen(QColor("#4b5563"));
+            QFont placeholderFont;
+            placeholderFont.setPointSizeF(8.0);
+            painter->setFont(placeholderFont);
+            painter->drawText(previewArea, Qt::AlignCenter, "No Preview");
+        } else {
+            // Draw image scaled to fit
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor("#111827"));
+            painter->drawRoundedRect(previewArea, 4, 4);
+            QImage scaled = m_previewImage.scaled(
+                static_cast<int>(previewArea.width()),
+                static_cast<int>(previewArea.height()),
+                Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            QPointF imgPos(previewArea.center().x() - scaled.width() / 2.0,
+                           previewArea.center().y() - scaled.height() / 2.0);
+            painter->drawImage(imgPos, scaled);
+        }
     }
 }
 
@@ -249,6 +288,12 @@ QString NodeItem::formatParamValue(const ParameterSpec &spec, const QVariant &va
         return value.toString();
     }
     return value.toString();
+}
+
+void NodeItem::setPreviewImage(const QImage &image)
+{
+    m_previewImage = image;
+    update();
 }
 
 GraphScene::GraphScene(WorkflowGraph *graph, const NodeFactory *factory, QObject *parent)

@@ -1,5 +1,6 @@
 #include "gui/ParameterEditorWidget.h"
 
+#include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -13,9 +14,11 @@
 #include <QLineEdit>
 #include <QPainter>
 #include <QPixmap>
+#include <QPointer>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QSvgRenderer>
+#include <QTimer>
 #include <QVBoxLayout>
 
 ParameterEditorWidget::ParameterEditorWidget(QWidget *parent)
@@ -121,18 +124,31 @@ QWidget *ParameterEditorWidget::editorFor(const ParameterSpec &spec, Node *node)
         const bool isSave = !spec.choices.isEmpty() && spec.choices.first() == "save";
         const QString filter = spec.choices.size() > 1 ? spec.choices.at(1) : QString();
         connect(browseBtn, &QPushButton::clicked, this, [this, lineEdit, node, name = spec.name, isSave, filter]() {
-            QWidget *dialogParent = window();
-            QString path;
-            if (isSave) {
-                path = QFileDialog::getSaveFileName(dialogParent, tr("Select File"), lineEdit->text(), filter);
-            } else {
-                path = QFileDialog::getOpenFileName(dialogParent, tr("Select File"), lineEdit->text(), filter);
-            }
-            if (!path.isEmpty()) {
-                lineEdit->setText(path);
-                node->setParameter(name, path);
-                emit parametersChanged();
-            }
+            QPointer<QLineEdit> safeEdit = lineEdit;
+            QPointer<ParameterEditorWidget> self = this;
+            QString currentPath = lineEdit->text();
+            // Defer dialog to next event loop iteration to avoid corrupting
+            // the QGraphicsProxyWidget / QGraphicsScene state.
+            QTimer::singleShot(0, QApplication::instance(), [self, safeEdit, node, name, isSave, filter, currentPath]() {
+                QWidget *dialogParent = QApplication::activeWindow();
+                QString path;
+                if (isSave) {
+                    path = QFileDialog::getSaveFileName(dialogParent,
+                        ParameterEditorWidget::tr("Select File"), currentPath, filter);
+                } else {
+                    path = QFileDialog::getOpenFileName(dialogParent,
+                        ParameterEditorWidget::tr("Select File"), currentPath, filter);
+                }
+                if (!path.isEmpty()) {
+                    node->setParameter(name, path);
+                    if (safeEdit) {
+                        safeEdit->setText(path);
+                    }
+                    if (self) {
+                        emit self->parametersChanged();
+                    }
+                }
+            });
         });
         return container;
     }

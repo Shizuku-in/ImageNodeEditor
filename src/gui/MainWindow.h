@@ -42,7 +42,7 @@ private:
     void setupUi();
     void populateNodeList();
     void refreshDefaultNodeTitles();
-    void updatePreview(const QString &nodeId);
+    void updateNodePreviews();
     void appendLog(const QString &message);
 
     NodeFactory m_factory;
@@ -63,6 +63,5 @@ private:
     QLabel *m_nodeLibraryLabel = nullptr;
     QListWidget *m_nodeList = nullptr;
     GraphScene *m_scene = nullptr;
-    QLabel *m_preview = nullptr;
     QPlainTextEdit *m_log = nullptr;
 };

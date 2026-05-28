@@ -93,6 +93,7 @@ public:
     QString nodeId() const;
     PortItem *portItem(const QString &portName, PortDirection direction) const;
     void refreshParameterLabels();
+    void setPreviewImage(const QImage &image);
 
 protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -108,4 +109,7 @@ private:
     QHash<QString, PortItem *> m_ports;
     QList<QGraphicsTextItem *> m_paramLabels;
     qreal m_paramStartY = 0;
+    QImage m_previewImage;
+    qreal m_previewY = 0;
+    bool m_supportsPreview = false;
 };

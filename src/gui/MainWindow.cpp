@@ -61,11 +61,6 @@ void MainWindow::setupUi()
     view->setRenderHint(QPainter::Antialiasing);
     view->setDragMode(QGraphicsView::RubberBandDrag);
 
-    m_preview = new QLabel(tr("Preview"), this);
-    m_preview->setMinimumHeight(180);
-    m_preview->setAlignment(Qt::AlignCenter);
-    m_preview->setStyleSheet("QLabel { background: #111827; color: #d1d5db; }");
-
     m_log = new QPlainTextEdit(this);
     m_log->setReadOnly(true);
     m_log->setMaximumBlockCount(500);
@@ -76,15 +71,9 @@ void MainWindow::setupUi()
     leftLayout->addWidget(m_nodeLibraryLabel);
     leftLayout->addWidget(m_nodeList);
 
-    auto *bottom = new QSplitter(Qt::Horizontal, this);
-    bottom->addWidget(m_log);
-    bottom->addWidget(m_preview);
-    bottom->setStretchFactor(0, 1);
-    bottom->setStretchFactor(1, 1);
-
     auto *center = new QSplitter(Qt::Vertical, this);
     center->addWidget(view);
-    center->addWidget(bottom);
+    center->addWidget(m_log);
     center->setStretchFactor(0, 4);
     center->setStretchFactor(1, 1);
 
@@ -110,7 +99,6 @@ void MainWindow::addSelectedNode()
 void MainWindow::onNodeSelected(const QString &nodeId)
 {
     m_selectedNodeId = nodeId;
-    updatePreview(nodeId);
 }
 
 void MainWindow::runWorkflow()
@@ -125,7 +113,7 @@ void MainWindow::runWorkflow()
         return;
     }
     appendLog(tr("Workflow executed successfully."));
-    updatePreview(m_selectedNodeId);
+    updateNodePreviews();
 }
 
 void MainWindow::newWorkflow()
@@ -133,7 +121,6 @@ void MainWindow::newWorkflow()
     m_graph.clear();
     m_executor.clear();
     m_scene->rebuild();
-    m_preview->setText(tr("Preview"));
     markDirty();
 }
 
@@ -211,9 +198,6 @@ void MainWindow::retranslateUi()
     if (m_runAction) m_runAction->setText(tr("Run"));
     if (m_languageButton) m_languageButton->setText(tr("Language"));
     if (m_nodeLibraryLabel) m_nodeLibraryLabel->setText(tr("Node Library"));
-    if (m_preview && m_preview->pixmap(Qt::ReturnByValue).isNull()) {
-        m_preview->setText(tr("Preview"));
-    }
 
     populateNodeList();
     refreshDefaultNodeTitles();
@@ -252,18 +236,17 @@ void MainWindow::refreshDefaultNodeTitles()
     }
 }
 
-void MainWindow::updatePreview(const QString &nodeId)
+void MainWindow::updateNodePreviews()
 {
-    if (nodeId.isEmpty() || !m_executor.outputs().contains(nodeId)) {
-        return;
+    for (Node *node : m_graph.nodes()) {
+        if (!node->supportsPreview()) continue;
+        NodeItem *item = m_scene->nodeItem(node->id());
+        if (!item) continue;
+        const auto outputs = m_executor.outputs().value(node->id());
+        if (outputs.contains("image")) {
+            item->setPreviewImage(outputs.value("image").asImage());
+        }
     }
-    const auto outputs = m_executor.outputs().value(nodeId);
-    if (!outputs.contains("image")) {
-        m_preview->setText(tr("Selected node has no image output."));
-        return;
-    }
-    const QImage image = outputs.value("image").asImage();
-    m_preview->setPixmap(QPixmap::fromImage(image).scaled(m_preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
 void MainWindow::appendLog(const QString &message)

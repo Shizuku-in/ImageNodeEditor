@@ -86,6 +86,7 @@ public:
     virtual QVector<PortSpec> outputPorts() const = 0;
     virtual QVector<ParameterSpec> parameterSpecs() const = 0;
     virtual NodeResult process(const QHash<QString, DataValue> &inputs) = 0;
+    virtual bool supportsPreview() const { return false; }
 
     QVariantMap parameters() const;
     void setParameters(const QVariantMap &parameters);
