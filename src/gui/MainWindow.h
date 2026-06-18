@@ -4,12 +4,15 @@
 #include "core/WorkflowExecutor.h"
 #include "core/WorkflowGraph.h"
 
+#include <QHash>
 #include <QMainWindow>
+#include <QStringList>
 
 class QAction;
 class QMenu;
 class QToolBar;
 class QToolButton;
+class QTimer;
 class GraphScene;
 class QLabel;
 class QListWidget;
@@ -42,7 +45,11 @@ private:
     void setupUi();
     void populateNodeList();
     void refreshDefaultNodeTitles();
+    void scheduleNodePreviews();
     void updateNodePreviews();
+    void clearPreviewCache();
+    void clearPreviewState(const QString &nodeId);
+    QString previewSignature(Node *node, const QStringList &inputSignatures) const;
     void appendLog(const QString &message);
 
     NodeFactory m_factory;
@@ -50,6 +57,8 @@ private:
     WorkflowExecutor m_executor;
     QString m_selectedNodeId;
     bool m_dirty = false;
+    QHash<QString, QHash<QString, DataValue>> m_previewOutputs;
+    QHash<QString, QString> m_previewSignatures;
 
     QMenu *m_languageMenu = nullptr;
     QAction *m_englishAction = nullptr;
@@ -63,5 +72,6 @@ private:
     QLabel *m_nodeLibraryLabel = nullptr;
     QListWidget *m_nodeList = nullptr;
     GraphScene *m_scene = nullptr;
+    QTimer *m_previewTimer = nullptr;
     QPlainTextEdit *m_log = nullptr;
 };

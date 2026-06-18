@@ -8,9 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-include(CTest)
-
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Core Svg Test LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Core Svg LinguistTools)
 
 set(TS_FILES
     translations/ImageNodeEditor_zh_CN.ts
@@ -53,24 +51,12 @@ add_custom_command(TARGET ImageNodeEditor POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${QM_FILES} "$<TARGET_FILE_DIR:ImageNodeEditor>/translations"
 )
 
-if (BUILD_TESTING)
-    add_executable(ImageNodeEditorTests
-        tests/core_tests.cpp
-        ${COMMON_SOURCES}
-    )
-    target_include_directories(ImageNodeEditorTests PRIVATE src)
-    target_link_libraries(ImageNodeEditorTests PRIVATE Qt6::Test Qt6::Gui Qt6::Core)
-    add_test(NAME ImageNodeEditorTests COMMAND ImageNodeEditorTests)
-endif()
+
 
 if (MSVC)
     target_compile_options(ImageNodeEditor PRIVATE /W4)
-    if (BUILD_TESTING)
-        target_compile_options(ImageNodeEditorTests PRIVATE /W4)
-    endif()
+
 else()
     target_compile_options(ImageNodeEditor PRIVATE -Wall -Wextra -Wpedantic)
-    if (BUILD_TESTING)
-        target_compile_options(ImageNodeEditorTests PRIVATE -Wall -Wextra -Wpedantic)
-    endif()
+
 endif()

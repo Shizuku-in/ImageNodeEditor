@@ -7,15 +7,21 @@
 #include "nodes/ImageNodes.h"
 
 #include <QAction>
+#include <QDateTime>
 #include <QEvent>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QImage>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
 #include <QLabel>
 #include <QListWidget>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QSplitter>
+#include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -59,8 +65,14 @@ void MainWindow::setupUi()
     connect(m_scene, &GraphScene::warningRaised, this, &MainWindow::showWarning);
     connect(m_scene, &GraphScene::graphChanged, this, [this]() {
         markDirty();
-        updateNodePreviews();
+        scheduleNodePreviews();
     });
+
+    m_previewTimer = new QTimer(this);
+    m_previewTimer->setSingleShot(true);
+    m_previewTimer->setInterval(120);
+    connect(m_previewTimer, &QTimer::timeout, this, &MainWindow::updateNodePreviews);
+
     auto *view = new GraphView(m_scene, this);
 
     m_log = new QPlainTextEdit(this);
@@ -122,6 +134,7 @@ void MainWindow::newWorkflow()
 {
     m_graph.clear();
     m_executor.clear();
+    clearPreviewCache();
     m_scene->rebuild();
     updateNodePreviews();
     markDirty();
@@ -139,6 +152,7 @@ void MainWindow::openWorkflow()
         return;
     }
     m_executor.clear();
+    clearPreviewCache();
     m_scene->rebuild();
     updateNodePreviews();
     appendLog(tr("Loaded %1").arg(path));
@@ -241,11 +255,38 @@ void MainWindow::refreshDefaultNodeTitles()
     }
 }
 
+void MainWindow::scheduleNodePreviews()
+{
+    if (m_previewTimer) {
+        m_previewTimer->start();
+    } else {
+        updateNodePreviews();
+    }
+}
+
 void MainWindow::updateNodePreviews()
 {
-    QHash<QString, QHash<QString, DataValue>> liveOutputs;
     QString topoError;
     const QList<QString> order = m_graph.topologicalOrder(&topoError);
+    QSet<QString> currentNodeIds;
+    for (const QString &nodeId : order) {
+        currentNodeIds.insert(nodeId);
+    }
+
+    for (auto it = m_previewOutputs.begin(); it != m_previewOutputs.end();) {
+        if (currentNodeIds.contains(it.key())) {
+            ++it;
+        } else {
+            it = m_previewOutputs.erase(it);
+        }
+    }
+    for (auto it = m_previewSignatures.begin(); it != m_previewSignatures.end();) {
+        if (currentNodeIds.contains(it.key())) {
+            ++it;
+        } else {
+            it = m_previewSignatures.erase(it);
+        }
+    }
 
     if (!topoError.isEmpty()) {
         for (Node *node : m_graph.nodes()) {
@@ -259,14 +300,6 @@ void MainWindow::updateNodePreviews()
     }
 
     const QList<Edge> edges = m_graph.edges();
-    for (Node *node : m_graph.nodes()) {
-        if (node->supportsPreview()) {
-            if (NodeItem *item = m_scene->nodeItem(node->id())) {
-                item->setPreviewImage(QImage());
-            }
-        }
-    }
-
     for (const QString &nodeId : order) {
         Node *node = m_graph.node(nodeId);
         if (!node) {
@@ -274,17 +307,20 @@ void MainWindow::updateNodePreviews()
         }
 
         QHash<QString, DataValue> inputs;
+        QStringList inputSignatures;
         bool missingInput = false;
         for (const Edge &edge : edges) {
             if (edge.toNode != nodeId) {
                 continue;
             }
-            const auto upstreamOutputs = liveOutputs.value(edge.fromNode);
+            const auto upstreamOutputs = m_previewOutputs.value(edge.fromNode);
             if (!upstreamOutputs.contains(edge.fromPort)) {
                 missingInput = true;
                 break;
             }
             inputs.insert(edge.toPort, upstreamOutputs.value(edge.fromPort));
+            inputSignatures.append(QString("%1<-%2.%3:%4")
+                .arg(edge.toPort, edge.fromNode, edge.fromPort, m_previewSignatures.value(edge.fromNode)));
         }
         for (const PortSpec &input : node->inputPorts()) {
             if (input.required && !inputs.contains(input.name)) {
@@ -293,22 +329,74 @@ void MainWindow::updateNodePreviews()
             }
         }
         if (missingInput) {
+            clearPreviewState(nodeId);
             continue;
         }
 
-        const NodeResult result = node->preview(inputs);
-        if (!result.ok) {
-            continue;
+        inputSignatures.sort();
+        const QString signature = previewSignature(node, inputSignatures);
+        QHash<QString, DataValue> outputs;
+        if (m_previewSignatures.value(nodeId) == signature && m_previewOutputs.contains(nodeId)) {
+            outputs = m_previewOutputs.value(nodeId);
+        } else {
+            const NodeResult result = node->preview(inputs);
+            if (!result.ok) {
+                clearPreviewState(nodeId);
+                continue;
+            }
+            outputs = result.outputs;
+            m_previewOutputs.insert(nodeId, outputs);
+            m_previewSignatures.insert(nodeId, signature);
         }
-        liveOutputs.insert(nodeId, result.outputs);
 
         if (node->supportsPreview()) {
             NodeItem *item = m_scene->nodeItem(nodeId);
-            if (item && result.outputs.contains("image")) {
-                item->setPreviewImage(result.outputs.value("image").asImage());
+            if (item && outputs.contains("image")) {
+                item->setPreviewImage(outputs.value("image").asImage());
+            } else if (item) {
+                item->setPreviewImage(QImage());
             }
         }
     }
+}
+
+void MainWindow::clearPreviewCache()
+{
+    if (m_previewTimer) {
+        m_previewTimer->stop();
+    }
+    m_previewOutputs.clear();
+    m_previewSignatures.clear();
+}
+
+void MainWindow::clearPreviewState(const QString &nodeId)
+{
+    m_previewOutputs.remove(nodeId);
+    m_previewSignatures.remove(nodeId);
+    if (NodeItem *item = m_scene->nodeItem(nodeId)) {
+        item->setPreviewImage(QImage());
+    }
+}
+
+QString MainWindow::previewSignature(Node *node, const QStringList &inputSignatures) const
+{
+    QJsonObject params = QJsonObject::fromVariantMap(node->parameters());
+    for (const ParameterSpec &spec : node->parameterSpecs()) {
+        if (spec.kind != ParameterKind::FilePath) {
+            continue;
+        }
+        const QString path = node->parameter(spec.name).toString();
+        QFileInfo info(path);
+        if (!info.exists()) {
+            continue;
+        }
+        params.insert(QString("__file_%1_size").arg(spec.name), QJsonValue::fromVariant(info.size()));
+        params.insert(QString("__file_%1_mtime").arg(spec.name), QJsonValue::fromVariant(info.lastModified().toMSecsSinceEpoch()));
+    }
+
+    return node->typeName()
+        + "|params=" + QString::fromUtf8(QJsonDocument(params).toJson(QJsonDocument::Compact))
+        + "|inputs=" + inputSignatures.join("|");
 }
 
 void MainWindow::appendLog(const QString &message)
